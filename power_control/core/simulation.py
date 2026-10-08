@@ -29,14 +29,14 @@ class PlantConfig:
 
 @dataclass
 class ControlConfig:
-    outer_kp: float = 0.45
-    outer_ki: float = 80.0
-    inner_kp: float = 0.055
-    inner_ki: float = 220.0
-    single_kp: float = 0.035
-    single_ki: float = 18.0
-    single_kd: float = 0.00002
-    control_frequency: float = 20_000.0
+    outer_kp: float = 0.30
+    outer_ki: float = 0.025
+    inner_kp: float = 0.0025
+    inner_ki: float = 0.0005
+    single_kp: float = 0.003
+    single_ki: float = 0.0007
+    single_kd: float = 0.0
+    control_frequency: float = 1_000.0
     soft_start: float = 0.10
 
 
@@ -150,17 +150,17 @@ def run_simulation(
             _power_mode, mode_changed = mode_selector.update(measured_ratio, t)
 
             if mode == "cascade":
-                current_ref = outer.update(voltage_error, ctrl_dt)
+                current_ref = outer.update(voltage_error)
                 current_error = current_ref - il
                 if mode_changed:
                     previous_correction = ratio_cmd - ratio_ff
                     inner.reset(previous_correction - inner.kp * current_error)
-                correction = inner.update(current_error, ctrl_dt)
+                correction = inner.update(current_error)
                 ratio_cmd = mode_selector.constrain_ratio(
                     ratio_ff + correction, plant.duty_max
                 )
             else:
-                derivative = (voltage_error - previous_error) / ctrl_dt
+                derivative = voltage_error - previous_error
                 if mode_changed:
                     single_i = ratio_cmd - ratio_ff - control.single_kp * voltage_error
                 unsaturated = (
@@ -176,7 +176,7 @@ def run_simulation(
                     or (unsaturated > high and voltage_error < 0.0)
                     or (unsaturated < low and voltage_error > 0.0)
                 ):
-                    single_i += control.single_ki * voltage_error * ctrl_dt
+                    single_i += control.single_ki * voltage_error
                 current_ref = np.nan
                 previous_error = voltage_error
 
@@ -354,7 +354,7 @@ def run_power_simulation(
             if mode_changed:
                 previous_correction = ratio_cmd - ratio_ff
                 current_pi.reset(previous_correction - current_pi.kp * current_error)
-            correction = current_pi.update(current_error, ctrl_dt)
+            correction = current_pi.update(current_error)
             ratio_cmd = mode_selector.constrain_ratio(
                 ratio_ff + correction, plant.duty_max
             )

@@ -163,18 +163,26 @@ class BuckBoostApp(tk.Tk):
         current_gains_box = ttk.LabelFrame(control_tab, text="电流内环 PI", padding=8)
         current_gains_box.pack(fill="x", pady=7)
         for key, label, value in [
-            ("inner_kp", "内环 Kp", "0.055"),
-            ("inner_ki", "内环 Ki", "220"),
+            ("control_frequency", "控制计算频率 / Hz", "1000"),
+            ("inner_kp", "内环 Kp", "0.0025"),
+            ("inner_ki", "内环 Ki / 次", "0.0005"),
         ]:
             self._entry(current_gains_box, key, label, value)
+        ttk.Label(
+            current_gains_box,
+            text="Ki 为每次循环增益，不乘 dt。控制计算 1 kHz；PWM 载波应保持更高频率。",
+            foreground="#6e6e73",
+            wraplength=300,
+            justify="left",
+        ).grid(row=3, column=0, columnspan=2, sticky="w", pady=(7, 1))
         self.voltage_gains_box = ttk.LabelFrame(control_tab, text="稳压模式专用参数", padding=8)
         self.voltage_gains_box.pack(fill="x", pady=7)
         for key, label, value in [
-            ("outer_kp", "外环 Kp / A·V⁻¹", "0.45"),
-            ("outer_ki", "外环 Ki / A·V⁻¹·s⁻¹", "80"),
-            ("single_kp", "单环 Kp", "0.035"),
-            ("single_ki", "单环 Ki", "18"),
-            ("single_kd", "单环 Kd", "0.00002"),
+            ("outer_kp", "外环 Kp / A·V⁻¹", "0.30"),
+            ("outer_ki", "外环 Ki / 次", "0.025"),
+            ("single_kp", "单环 Kp", "0.003"),
+            ("single_ki", "单环 Ki / 次", "0.0007"),
+            ("single_kd", "单环 Kd / 差分", "0"),
         ]:
             self._entry(self.voltage_gains_box, key, label, value)
 
@@ -288,7 +296,7 @@ class BuckBoostApp(tk.Tk):
             outer_kp=value("outer_kp"), outer_ki=value("outer_ki"),
             inner_kp=value("inner_kp"), inner_ki=value("inner_ki"),
             single_kp=value("single_kp"), single_ki=value("single_ki"),
-            single_kd=value("single_kd"),
+            single_kd=value("single_kd"), control_frequency=value("control_frequency"),
         )
         if self.application_mode.get() == "power":
             scenario = PowerScenarioConfig(

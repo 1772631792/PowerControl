@@ -12,7 +12,11 @@ def clamp(value: float, low: float, high: float) -> float:
 
 @dataclass
 class PIController:
-    """PI controller with conditional-integration anti-windup."""
+    """Discrete PI controller with per-sample Ki and anti-windup.
+
+    Ki is already the integral gain for one control update. This mirrors common
+    embedded code: integral += Ki * error, with no runtime dt multiplication.
+    """
 
     kp: float
     ki: float
@@ -23,7 +27,7 @@ class PIController:
     def reset(self, output: float = 0.0) -> None:
         self.integral = clamp(output, self.out_min, self.out_max)
 
-    def update(self, error: float, dt: float, feedforward: float = 0.0) -> float:
+    def update(self, error: float, feedforward: float = 0.0) -> float:
         proportional = self.kp * error
         candidate = proportional + self.integral + feedforward
         saturated = clamp(candidate, self.out_min, self.out_max)
@@ -35,7 +39,7 @@ class PIController:
             or (candidate < self.out_min and error > 0.0)
         )
         if integrate:
-            self.integral += self.ki * error * dt
+            self.integral += self.ki * error
             self.integral = clamp(
                 self.integral,
                 self.out_min - feedforward - proportional,

@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from power_control.core.controllers import ModeStateMachine, ratio_to_duties
+from power_control.core.controllers import ModeStateMachine, PIController, ratio_to_duties
 from power_control.core.simulation import (
     ControlConfig,
     PlantConfig,
@@ -16,6 +16,11 @@ from power_control.core.simulation import (
 
 
 class SimulationTests(unittest.TestCase):
+    def test_pi_uses_per_sample_integral_gain_without_dt(self):
+        controller = PIController(kp=1.0, ki=0.1, out_min=-10.0, out_max=10.0)
+        self.assertAlmostEqual(controller.update(2.0), 2.2)
+        self.assertAlmostEqual(controller.update(2.0), 2.4)
+
     def test_mode_guard_blocks_wrong_boost_command_in_buck(self):
         selector = ModeStateMachine()
         mode, _ = selector.update(0.5, 0.0)
